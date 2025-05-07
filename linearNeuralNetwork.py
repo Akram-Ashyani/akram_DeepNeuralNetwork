@@ -28,3 +28,52 @@ class Visualize_data():
 
 visual = Visualize_data(20, 0)
 visual.visualization()
+
+train_loader = torch.utils.data.DataLoader(dataset=train_data, batch_size=batch_size, shuffle=True)
+test_loader = torch.utils.data.DataLoader(dataset=test_data, batch_size=batch_size, shuffle=False)
+
+class Image_Classifier(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(Image_Classifier, self).__init__()
+        self.linear = nn.Linear(input_dim, output_dim)
+
+    def forward(self, x):
+        output = self.linear(x)
+        return output
+    
+model = Image_Classifier(input_dim, output_dim)
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+
+iter = 0
+for epoch in range(num_epoch):
+    for i, (image, label) in enumerate(train_loader):
+        images = image.view(-1, 28*28)
+        labels = label
+
+        #zero_grad
+        optimizer.zero_grad()
+        output = model(images)
+        loss = criterion(output, labels)
+        loss.backward()
+        optimizer.step()
+
+        iter += 1
+        if iter % 200 == 0:
+            correct = 0
+            total = 0
+            for image, label in test_loader:
+                images = image.view(-1, 28*28)
+                labels = label
+
+                output = model(images)
+                _, predict = torch.max(output, 1)
+                total += labels.size(0)
+                correct += (predict == labels).sum()
+
+            accuracy = 100 * correct / total
+            print('Iter {}, Loss {}, Accuracy {}'.format(iter, loss.item(), accuracy))
+
+'''
+total_iteration = num_epoch * ceil(len(train_data) //batch_size)= 10 * ceil(60000/256) = 2350 iterations
+'''
