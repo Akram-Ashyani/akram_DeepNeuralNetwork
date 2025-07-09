@@ -95,3 +95,22 @@ for epoch in range(epochs):
    train_losses.append(train_loss)
    valid_losses.append(valid_loss)
    print(f'Epoch {epoch+1}/ T_loss {train_loss/len(trainloader.sampler)}/ V_loss {valid_loss/len(validloader.sampler)}')
+
+class_correct = list(0. for i in range(10))
+class_total = list(0. for i in range(10))
+total = 0
+correct = 0
+
+model.eval()
+for i, (images, labels) in enumerate(testloader):
+   output = model(images)
+   loss = loss_criterion(output, labels)
+
+   test_loss = loss.item()
+   total += labels.size(0)
+
+   _, pred = torch.max(output, 1)
+   correct += (pred == labels).sum()
+test_loss = test_loss / len(testloader.sampler)
+accuracy = 100 * correct / total
+print('loss {}, accuracy {}'.format(test_loss, accuracy))
