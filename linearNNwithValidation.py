@@ -46,17 +46,19 @@ class Model(nn.Module):
       self.FC3 = nn.Linear(256, 128)
       self.FC4 = nn.Linear(128, 10)
 
-      self.Relu = nn.ReLU()
+      self.Relu = nn.ReLU() # another way to define activation function
       self.dropout = nn.Dropout(0.2)
 
    def forward(self, x):
-      x = x.view(x.shape[0], -1)
+      x = x.view(x.shape[0], -1) # change shape to (batch size, 28*28*1)
       x = self.dropout(Func.relu(self.FC1(x)))
-      x = self.dropout(self.Relu(self.FC2(x)))
+      x = self.dropout(self.Relu(self.FC2(x))) # use the defined activation function
       x= self.dropout(Func.relu(self.FC3(x)))
       output = self.FC4(x)
       return output
    
+# Another way to define the Model instead of using class like above 
+# or it can be used as self.classifier inside of the __init__ then used in forward by output = self.sequential(x)
 classifier = nn.Sequential(nn.Linear(28*28, 512),
                            nn.ReLU(),
                            nn.Dropout(0.2),
@@ -74,6 +76,7 @@ optimizer = optim.SGD(model.parameters(), lr=0.01)
 
 epochs = 40
 
+# start of training and comparing with evaluation
 model.train()
 train_losses, valid_losses = [], []
 for epoch in range(epochs):
@@ -100,8 +103,9 @@ class_correct = list(0. for i in range(10))
 class_total = list(0. for i in range(10))
 total = 0
 correct = 0
+correct_overall = 0
 
-model.eval()
+model.eval() # test step so it will skip dropout
 for i, (images, labels) in enumerate(testloader):
    output = model(images)
    loss = loss_criterion(output, labels)
@@ -110,7 +114,17 @@ for i, (images, labels) in enumerate(testloader):
    total += labels.size(0)
 
    _, pred = torch.max(output, 1)
-   correct += (pred == labels).sum()
+   correct = np.squeeze(pred.eq(labels.view_as(pred)))
+   correct_overall += (pred == labels).sum()
+   for i in range(len(labels)):
+      label = labels[i]
+      class_correct[label] += correct[i].item()
+      class_total[label] += 1
+
 test_loss = test_loss / len(testloader.sampler)
-accuracy = 100 * correct / total
-print('loss {}, accuracy {}'.format(test_loss, accuracy))
+# print('loss {}'.format(test_loss))
+accuracy = 100 * correct_overall / total
+print('loss {}, overall accuracy {}'.format(test_loss, accuracy))
+for i in range(10):
+   if class_total[i] > 0:
+      print(f'accuracy of class {i} is: {100*class_correct[i]/class_total[i]}')
